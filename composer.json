@@ -1,5 +1,5 @@
 {
-    "name": "leesiongchan/omnipay-molpay",
+    "name": "wdtech/omnipay-molpay",
     "type": "library",
     "description": "MOLPay gateway for Omnipay payment processing library",
     "keywords": [
@@ -11,12 +11,12 @@
         "payment",
         "purchase"
     ],
-    "homepage": "https://github.com/leesiongchan/omnipay-molpay",
+    "homepage": "https://github.com/liron-li/omnipay-molpay",
     "license": "MIT",
     "authors": [
         {
-            "name": "Lee Siong Chan",
-            "email": "ahlee2326@me.com"
+            "name": "Li Li",
+            "email": "lili@itowan.com"
         }
     ],
     "autoload": {
