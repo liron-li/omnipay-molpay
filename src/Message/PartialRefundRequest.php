@@ -198,16 +198,15 @@ class PartialRefundRequest extends AbstractRequest
      */
     public function sendData($data)
     {
-        $httpRequest = $this->httpClient->createRequest(
-            $this->getHttpMethod(),
-            $this->getEndpoint(),
-            null,
-            $data
-        );
 
-        $httpResponse = $httpRequest->send();
+        $response = $this->httpClient->request($this->getHttpMethod(), $this->getEndpoint(), [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+        ], json_encode($data));
 
-        return $this->response = new PartialRefundResponse($this, $httpResponse->json());
+        $data = json_decode($response->getBody(), true);
+
+        return $this->response = new PartialRefundResponse($this, $data);
     }
 
     /**
