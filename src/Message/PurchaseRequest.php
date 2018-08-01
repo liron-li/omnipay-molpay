@@ -2,6 +2,9 @@
 
 namespace Omnipay\MOLPay\Message;
 
+
+use Omnipay\MOLPay\Exception\DefaultException;
+
 /**
  * MOLPay Purchase Request.
  *
@@ -21,30 +24,38 @@ class PurchaseRequest extends AbstractRequest
      */
     public function getData()
     {
-        $this->validate('amount', 'card', 'description', 'merchantId', 'transactionId', 'verifyKey');
-        $this->validateCreditCardDetails();
+        $this->validate('secretKey', 'amount', 'returnUrl', 'transactionId');
 
-        if ($this->getPaymentMethod()) {
-            $this->validatePaymentMethod();
+        $endpoint = $this->getEndpoint();
+
+        $requestData =  [
+            'applicationCode'       => $this->getApplicationCode(),
+            'referenceId'           => $this->getTransactionId(),
+            'version'               => self::API_VERSION,
+            'amount'                => $this->getAmount(),
+            'currencyCode'          => $this->getCurrencyCode(),
+            'returnUrl'             => $this->getReturnUrl(),
+            'description'           => $this->getDescription(),
+            'customerId'            => $this->getAccountId(),
+            'signature'             => $this->generateSignature(),
+        ];
+
+        if ($channelId = $this->getChannelId()) {
+            $requestData['channelId'] = $channelId;
         }
 
-        $card = $this->getCard();
+        $httpResponse = $this->httpClient->request('POST', $endpoint, [
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ], http_build_query($requestData));
 
-        return array(
-            'amount' => $this->getAmount(),
-            'bill_desc' => $this->getDescription(),
-            'bill_email' => $card->getEmail(),
-            'bill_mobile' => $card->getPhone(),
-            'bill_name' => $card->getName(),
-            'channel' => $this->getPaymentMethod(),
-            'country' => $card->getCountry(),
-            'currency' => $this->getCurrency(),
-            'langcode' => $this->getLocale(),
-            'orderid' => $this->getTransactionId(),
-            'vcode' => $this->generateVCode(),
-            'returnurl' => $this->getReturnUrl(),
-            'cancelurl' => $this->getCancelUrl(),
-        );
+        $body = json_decode($httpResponse->getBody(), true);
+
+        if (isset($body['message'])) {
+            throw new DefaultException($body['message']);
+        }
+
+        return $body;
     }
 
     /**
@@ -60,10 +71,20 @@ class PurchaseRequest extends AbstractRequest
      *
      * @return string
      */
-    protected function generateVCode()
+    protected function generateSignature()
     {
-        $this->validate('amount', 'merchantId', 'transactionId', 'verifyKey');
+        $amount             = $this->getAmount();
+        $applicationCode    = $this->getApplicationCode();
+        $currencyCode       = $this->getCurrencyCode();
+        $customerId         = $this->getAccountId();
+        $description        = $this->getDescription();
+        $referenceId        = $this->getTransactionId();
+        $returnUrl          = $this->getReturnUrl();
+        $version            = self::API_VERSION;
+        $secretKey          = $this->getSecretKey();
 
-        return md5($this->getAmount().$this->getMerchantId().$this->getTransactionId().$this->getVerifyKey());
+        $str = $amount . $applicationCode . $currencyCode . $customerId . $description . $referenceId . $returnUrl . $version . $secretKey;
+
+        return md5($str);
     }
 }
